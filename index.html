@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How well do you know me? | Friendship quiz</title>
+<meta name="description" content="Create a 15-question quiz about yourself and find out which friends and family know you best.">
+<meta property="og:title" content="How well do you know me?">
+<meta property="og:description" content="Take my quiz and find out your score.">
+<style>
+:root{--bg:#f6f3ff;--card:#fff;--ink:#1d1a3a;--mut:#6b6889;--line:#e3def5;--acc:#5b45e0;--acc2:#4a36c4;--on:#fff;--ok:#0f7a4f;--okbg:#e2f6ec;--no:#b3261e;--nobg:#fdeaea}
+@media (prefers-color-scheme:dark){:root{--bg:#12101f;--card:#1c1930;--ink:#f1eeff;--mut:#a7a3c4;--line:#322d52;--acc:#8b7bff;--acc2:#a093ff;--on:#12101f;--ok:#7be0b0;--okbg:#12382a;--no:#ff9a94;--nobg:#3d1616}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+.wrap{max-width:440px;margin:0 auto;padding:24px 16px 48px}
+.logo{font-weight:700;font-size:18px;text-align:center;margin:8px 0 20px;color:var(--acc)}
+#app{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 20px;min-height:420px}
+h1{font-size:24px;line-height:1.25;margin:0 0 8px}
+h2{font-size:20px;line-height:1.3;margin:0 0 16px}
+.sub{color:var(--mut);font-size:15px;margin:0 0 18px}
+input{width:100%;padding:14px;font-size:16px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink)}
+input:focus{outline:2px solid var(--acc);outline-offset:1px}
+button,.btn{display:block;width:100%;padding:14px 16px;margin-top:10px;font:inherit;font-size:16px;font-weight:600;text-align:center;text-decoration:none;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+button:active,.btn:active{transform:scale(.98)}
+.pri{background:var(--acc);border-color:var(--acc);color:var(--on)}
+.pri:hover{background:var(--acc2)}
+.opt{text-align:left;font-weight:500}
+.opt:hover{border-color:var(--acc)}
+.ok{background:var(--okbg);border-color:var(--ok);color:var(--ok)}
+.no{background:var(--nobg);border-color:var(--no);color:var(--no)}
+.plain{border:none;background:none;color:var(--mut);font-weight:500;font-size:14px}
+.err{color:var(--no);font-size:14px;min-height:20px;margin:6px 0 0}
+.bar{height:6px;background:var(--line);border-radius:3px;margin-bottom:16px;overflow:hidden}
+.bar div{height:100%;background:var(--acc);border-radius:3px;transition:width .3s}
+.score{font-size:56px;font-weight:800;margin:4px 0;color:var(--acc)}
+.ad{margin:20px 0;min-height:0;text-align:center}
+footer{text-align:center;color:var(--mut);font-size:13px;margin-top:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">Know Me Quiz</div>
+
+  <div id="app"></div>
+
+  <!-- AD SLOT: after AdSense approves your site, paste your ad unit code inside this div -->
+  <div class="ad"></div>
+
+  <footer>Made for friends and family. No sign-up needed.</footer>
+</div>
+
+<script>
+// ---------- Question bank ----------
+// "~" becomes "your" for the quiz creator and "Name's" for their friends.
+// Add more questions at the END of this list only. Never reorder or delete
+// existing ones, or old shared links will show the wrong questions.
+// Keep the list under 36 questions.
+const BANK = [
+  ["What is ~ favourite food?", ["Pizza", "Biryani", "Chinese", "Burger"]],
+  ["What is ~ dream holiday?", ["Mountains", "Beach", "Big city", "Staying home"]],
+  ["What is ~ biggest fear?", ["Heights", "Darkness", "Exams", "Being alone"]],
+  ["What is ~ favourite colour?", ["Blue", "Black", "Red", "White"]],
+  ["What is ~ go-to drink?", ["Tea", "Coffee", "Cold drink", "Juice"]],
+  ["What is ~ favourite season?", ["Summer", "Monsoon", "Winter", "Spring"]],
+  ["What is ~ favourite kind of movie?", ["Comedy", "Action", "Romance", "Horror"]],
+  ["What is ~ ideal weekend?", ["Sleeping in", "Going out with friends", "Watching shows", "Playing games"]],
+  ["What is ~ favourite subject?", ["Maths", "Science", "English", "History"]],
+  ["What is ~ hidden talent?", ["Singing", "Dancing", "Drawing", "Cooking"]],
+  ["What is ~ favourite sport?", ["Cricket", "Football", "Badminton", "None of them"]],
+  ["What is ~ most-used app?", ["WhatsApp", "Instagram", "YouTube", "Snapchat"]],
+  ["What is ~ favourite festival?", ["Diwali", "Holi", "Eid", "Christmas"]],
+  ["What is ~ worst habit?", ["Being late", "Too much phone", "Overthinking", "Procrastinating"]],
+  ["What is ~ favourite sweet?", ["Chocolate", "Ice cream", "Gulab jamun", "Cake"]],
+  ["What is ~ dream job?", ["Business owner", "Doctor", "Engineer", "Artist"]],
+  ["What is ~ favourite pet?", ["Dog", "Cat", "Bird", "No pets"]],
+  ["What is ~ favourite type of music?", ["Bollywood", "Pop", "Hip-hop", "Classical"]],
+  ["What is ~ biggest strength?", ["Kindness", "Humour", "Hard work", "Confidence"]],
+  ["What is ~ favourite time of day?", ["Early morning", "Afternoon", "Evening", "Late night"]]
+];
+
+const TOTAL = 15;                              // questions per quiz
+const BASE = location.href.split('#')[0];      // this page's address
+const app = document.getElementById('app');
+let S = {};                                    // current state
+
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---------- Pack / unpack a quiz into the link ----------
+function enc(name, ids, ans) {
+  const raw = name + '|' + ids.map((id, i) => id.toString(36) + ans[i]).join('');
+  return btoa(unescape(encodeURIComponent(raw)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function dec(code) {
+  try {
+    let b = code.replace(/-/g, '+').replace(/_/g, '/');
+    while (b.length % 4) b += '=';
+    const raw = decodeURIComponent(escape(atob(b)));
+    const k = raw.lastIndexOf('|');
+    const name = raw.slice(0, k), p = raw.slice(k + 1), ids = [], ans = [];
+    for (let i = 0; i < p.length; i += 2) {
+      const id = parseInt(p[i], 36), a = +p[i + 1];
+      if (!BANK[id] || !(a >= 0 && a < 4)) return null;
+      ids.push(id); ans.push(a);
+    }
+    return name && ids.length ? { name, ids, ans } : null;
+  } catch (e) { return null; }
+}
+
+// ---------- Screens ----------
+function nameForm(title, sub, btn, done) {
+  app.innerHTML = `
+    <h1>${title}</h1>
+    <p class="sub">${sub}</p>
+    <input id="nm" maxlength="20" placeholder="Your name" autocomplete="off">
+    <p class="err" id="er"></p>
+    <button class="pri" id="go">${btn}</button>`;
+  const nm = document.getElementById('nm'), er = document.getElementById('er');
+  const submit = () => {
+    const v = nm.value.trim();
+    if (!v) { er.textContent = 'Enter a name first'; return; }
+    done(v);
+  };
+  nm.oninput = () => er.textContent = '';
+  nm.onkeydown = e => { if (e.key === 'Enter') submit(); };
+  document.getElementById('go').onclick = submit;
+}
+
+function home() {
+  nameForm(
+    'How well do they know you?',
+    'Answer 15 questions about yourself, then send the link to friends and family.',
+    'Create your quiz',
+    v => {
+      S = { mode: 'create', name: v, ids: BANK.slice(0, TOTAL).map((_, i) => i), ans: [], i: 0 };
+      ask();
+    });
+}
+
+function ask() {
+  const n = S.ids.length, q = BANK[S.ids[S.i]], creating = S.mode === 'create';
+  S.lock = false;
+  app.innerHTML = `
+    <div class="bar"><div style="width:${Math.round(S.i / n * 100)}%"></div></div>
+    <p class="sub" style="margin-bottom:6px">Question ${S.i + 1} of ${n}</p>
+    <h2>${q[0].replace('~', creating ? 'your' : esc(S.name) + "'s")}</h2>
+    ${q[1].map((o, k) => `<button class="opt" data-k="${k}">${o}</button>`).join('')}
+    ${creating ? '<button class="plain" id="sw">Swap this question</button>' : ''}`;
+
+  app.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    if (S.lock) return;
+    const k = +b.dataset.k;
+    if (creating) { S.ans[S.i] = k; next(); return; }
+    S.lock = true;
+    const correct = S.ans[S.i];
+    app.querySelectorAll('.opt')[correct].classList.add('ok');
+    if (k === correct) S.score++; else b.classList.add('no');
+    setTimeout(next, 800);
+  });
+
+  if (creating) document.getElementById('sw').onclick = () => {
+    const free = BANK.map((_, i) => i).filter(i => !S.ids.includes(i));
+    S.ids[S.i] = free[Math.floor(Math.random() * free.length)];
+    ask();
+  };
+}
+
+function next() {
+  S.i++;
+  if (S.i < S.ids.length) ask();
+  else S.mode === 'create' ? share() : result();
+}
+
+function share() {
+  const code = enc(S.name, S.ids, S.ans), url = BASE + '#q=' + code;
+  const text = encodeURIComponent('How well do you know me? Take my quiz: ' + url);
+  app.innerHTML = `
+    <h1>Your quiz is ready</h1>
+    <p class="sub">Send this link to friends and family and see who knows you best.</p>
+    <input id="url" readonly value="${url}">
+    <button class="pri" id="cp">Copy link</button>
+    <a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${text}">Share on WhatsApp</a>
+    <button class="plain" id="try">Try it as a friend</button>`;
+  const inp = document.getElementById('url'), cp = document.getElementById('cp');
+  cp.onclick = () => {
+    inp.select();
+    const ok = () => { cp.textContent = 'Copied'; setTimeout(() => cp.textContent = 'Copy link', 1500); };
+    try { navigator.clipboard.writeText(url).then(ok, ok); } catch (e) { document.execCommand('copy'); ok(); }
+  };
+  document.getElementById('try').onclick = () => startFriend(dec(code), code);
+}
+
+function startFriend(d, code) {
+  nameForm(
+    'How well do you know ' + esc(d.name) + '?',
+    'Answer ' + d.ids.length + ' questions and find out your score.',
+    'Start the quiz',
+    v => {
+      S = { mode: 'play', name: d.name, friend: v, ids: d.ids, ans: d.ans, i: 0, score: 0, code };
+      ask();
+    });
+}
+
+function result() {
+  const n = S.ids.length, r = S.score / n, nm = esc(S.name);
+  const msg = r >= 0.8 ? 'You know ' + nm + ' inside out.'
+    : r >= 0.5 ? 'Pretty good, but there is more to learn.'
+    : r >= 0.25 ? 'You have some catching up to do.'
+    : 'Do you two even know each other?';
+  const text = encodeURIComponent(
+    'I scored ' + S.score + '/' + n + ' on ' + S.name + "'s quiz. Try it: " + BASE + '#q=' + S.code);
+  app.innerHTML = `
+    <p class="sub" style="margin-bottom:0">${esc(S.friend)}, your score</p>
+    <p class="score">${S.score} / ${n}</p>
+    <p class="sub">${msg}</p>
+    <button class="pri" id="own">Create your own quiz</button>
+    <a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=${text}">Send score on WhatsApp</a>`;
+  document.getElementById('own').onclick = () => {
+    history.replaceState(null, '', BASE);
+    home();
+  };
+}
+
+// ---------- Start ----------
+function start() {
+  const m = location.hash.match(/^#q=(.+)/);
+  const d = m && dec(m[1]);
+  d ? startFriend(d, m[1]) : home();
+}
+window.addEventListener('hashchange', start);
+start();
+</script>
+</body>
+</html>
